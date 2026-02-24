@@ -721,8 +721,9 @@ describe('RAG MCP Server Integration Test - Phase 2', () => {
 
         const filePaths: string[] = parsed.files.map((f: { filePath: string }) => f.filePath)
 
-        // User document should be present
+        // User documents should be present (root and subdirectory)
         expect(filePaths).toContain(resolve(excludeTestBase, 'user-document.txt'))
+        expect(filePaths).toContain(resolve(excludeTestBase, 'docs', 'notes.txt'))
 
         // Files inside dbPath and cacheDir should NOT be present
         expect(filePaths).not.toContain(resolve(excludeTestDb, 'db-internal.txt'))
@@ -758,16 +759,6 @@ describe('RAG MCP Server Integration Test - Phase 2', () => {
         expect(sourceEntry).toBeDefined()
       })
 
-      it('Exclusion does not affect files outside excluded paths', async () => {
-        const result = await excludeServer.handleListFiles()
-        const parsed = JSON.parse(result.content[0].text)
-
-        const filePaths: string[] = parsed.files.map((f: { filePath: string }) => f.filePath)
-
-        // Files in docs/ subdirectory should appear normally
-        expect(filePaths).toContain(resolve(excludeTestBase, 'docs', 'notes.txt'))
-      })
-
       it('dbPath/cacheDir outside baseDir causes no errors', async () => {
         // Create a separate setup where dbPath and cacheDir are siblings of baseDir
         const siblingBase = resolve('./tmp/test-exclude-sibling')
@@ -798,8 +789,9 @@ describe('RAG MCP Server Integration Test - Phase 2', () => {
 
           const filePaths: string[] = parsed.files.map((f: { filePath: string }) => f.filePath)
 
-          // User file should appear normally
+          // Only the user file should appear
           expect(filePaths).toContain(resolve(siblingData, 'sibling-file.txt'))
+          expect(parsed.files.length).toBe(1)
         } finally {
           rmSync(siblingBase, { recursive: true, force: true })
         }

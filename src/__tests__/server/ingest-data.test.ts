@@ -280,25 +280,21 @@ This is markdown content with **bold** and _italic_ text.
       const listResult = await server.handleListFiles()
       const files = JSON.parse(listResult.content[0].text)
 
-      // Find the specific file we just ingested by source
-      const targetFile = files.find(
-        (f: { filePath: string; source?: string }) => f.source === source
-      )
+      // Find the specific item we just ingested by source (in sources)
+      const targetFile = files.sources.find((f: { source: string }) => f.source === source)
       expect(targetFile).toBeDefined()
-      expect(targetFile.filePath).toContain('raw-data')
+      expect(targetFile.source).toBe(source)
+      expect(targetFile.chunkCount).toBeGreaterThan(0)
+      expect(targetFile.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
     })
 
     it('list_files does not include source for regular files', async () => {
-      // Regular files (not raw-data) should not have source field
-      // This is tested implicitly - if filePath doesn't contain 'raw-data',
-      // the source field should be undefined
+      // Files in BASE_DIR (files) have filePath but no source field
       const listResult = await server.handleListFiles()
       const files = JSON.parse(listResult.content[0].text)
 
-      for (const file of files) {
-        if (!file.filePath.includes('raw-data')) {
-          expect(file.source).toBeUndefined()
-        }
+      for (const file of files.files) {
+        expect(file.source).toBeUndefined()
       }
     })
   })
@@ -366,10 +362,10 @@ This is markdown content with **bold** and _italic_ text.
         metadata: { source, format: 'text' },
       })
 
-      // Verify it's in list_files
+      // Verify it's in list_files (under sources)
       const listBefore = await server.handleListFiles()
       const filesBefore = JSON.parse(listBefore.content[0].text)
-      const targetBefore = filesBefore.find((f: { source?: string }) => f.source === source)
+      const targetBefore = filesBefore.sources.find((f: { source: string }) => f.source === source)
       expect(targetBefore).toBeDefined()
 
       // Delete by source
@@ -380,7 +376,7 @@ This is markdown content with **bold** and _italic_ text.
       // Verify it's removed from list_files
       const listAfter = await server.handleListFiles()
       const filesAfter = JSON.parse(listAfter.content[0].text)
-      const targetAfter = filesAfter.find((f: { source?: string }) => f.source === source)
+      const targetAfter = filesAfter.sources.find((f: { source: string }) => f.source === source)
       expect(targetAfter).toBeUndefined()
     })
 

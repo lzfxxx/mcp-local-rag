@@ -16,6 +16,17 @@ import {
 } from './title-extractor.js'
 
 // ============================================
+// Supported Extensions
+// ============================================
+
+/**
+ * File extensions supported by DocumentParser.
+ * Exported so other modules (e.g. list_files) stay in sync automatically
+ * when new formats are added here.
+ */
+export const SUPPORTED_EXTENSIONS = new Set(['.pdf', '.docx', '.txt', '.md'])
+
+// ============================================
 // Type Definitions
 // ============================================
 

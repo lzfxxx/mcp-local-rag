@@ -1,7 +1,8 @@
 // RAGServer implementation with MCP tools
 
 import { randomUUID } from 'node:crypto'
-import { readFile, unlink } from 'node:fs/promises'
+import { readFile, readdir, unlink } from 'node:fs/promises'
+import { extname, join } from 'node:path'
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
@@ -13,7 +14,7 @@ import {
 import { SemanticChunker } from '../chunker/index.js'
 import { Embedder } from '../embedder/index.js'
 import { parseHtml } from '../parser/html-parser.js'
-import { DocumentParser } from '../parser/index.js'
+import { DocumentParser, SUPPORTED_EXTENSIONS } from '../parser/index.js'
 import { extractMarkdownTitle, extractTxtTitle } from '../parser/title-extractor.js'
 import { type VectorChunk, VectorStore } from '../vectordb/index.js'
 import { formatErrorMessage } from './error-utils.js'
@@ -30,12 +31,15 @@ import {
 import { toolDefinitions } from './tool-definitions.js'
 import type {
   DeleteFileInput,
+  FileEntry,
   IngestDataInput,
   IngestFileInput,
   IngestResult,
+  ListFilesResult,
   QueryDocumentsInput,
   QueryResult,
   RAGServerConfig,
+  SourceEntry,
 } from './types.js'
 
 /** RAG server compliant with MCP Protocol */
@@ -46,9 +50,11 @@ export class RAGServer {
   private readonly chunker: SemanticChunker
   private readonly parser: DocumentParser
   private readonly dbPath: string
+  private readonly baseDir: string
 
   constructor(config: RAGServerConfig) {
     this.dbPath = config.dbPath
+    this.baseDir = config.baseDir
     this.server = new Server(
       { name: 'rag-mcp-server', version: '1.0.0' },
       { capabilities: { tools: {} } }
@@ -427,30 +433,53 @@ export class RAGServer {
 
   /**
    * list_files tool handler
-   * Enriches raw-data files with original source information
+   * Scans BASE_DIR for supported files and cross-references with ingested documents
    */
   async handleListFiles(): Promise<{ content: [{ type: 'text'; text: string }] }> {
     try {
-      const files = await this.vectorStore.listFiles()
+      // Get all ingested entries from the vector store
+      const ingested = await this.vectorStore.listFiles()
+      const ingestedMap = new Map(ingested.map((f) => [f.filePath, f]))
 
-      // Enrich raw-data files with source information
-      const enrichedFiles = files.map((file) => {
-        if (isRawDataPath(file.filePath)) {
-          const source = extractSourceFromPath(file.filePath)
-          if (source) {
-            return { ...file, source }
-          }
-        }
-        return file
+      // Scan BASE_DIR recursively for supported files.
+      // Errors propagate to the outer catch: if readdir fails, ingest_file and
+      // delete_file won't work either, so surfacing the error is appropriate.
+      const entries = await readdir(this.baseDir, { recursive: true, withFileTypes: true })
+      const baseDirFiles = entries
+        .filter((e) => e.isFile() && SUPPORTED_EXTENSIONS.has(extname(e.name).toLowerCase()))
+        .map((e) => {
+          // parentPath is the Node 21+ name; path is the deprecated Node 20 alias
+          // biome-ignore lint/suspicious/noExplicitAny: parentPath not yet in @types/node@20
+          const dir = (e as any).parentPath ?? e.path
+          return join(dir, e.name)
+        })
+        .sort()
+
+      const baseDirSet = new Set(baseDirFiles)
+
+      // Files in BASE_DIR with ingestion status
+      const files: FileEntry[] = baseDirFiles.map((filePath) => {
+        const entry = ingestedMap.get(filePath)
+        return entry
+          ? { filePath, ingested: true, chunkCount: entry.chunkCount, timestamp: entry.timestamp }
+          : { filePath, ingested: false }
       })
 
+      // Content ingested via ingest_data (web pages, clipboard, etc.) plus any
+      // orphaned DB entries whose files no longer exist on disk
+      const sources: SourceEntry[] = ingested
+        .filter((f) => !baseDirSet.has(f.filePath))
+        .map((f) => {
+          if (isRawDataPath(f.filePath)) {
+            const source = extractSourceFromPath(f.filePath)
+            if (source) return { source, chunkCount: f.chunkCount, timestamp: f.timestamp }
+          }
+          return { filePath: f.filePath, chunkCount: f.chunkCount, timestamp: f.timestamp }
+        })
+
+      const result: ListFilesResult = { baseDir: this.baseDir, files, sources }
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(enrichedFiles, null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
       }
     } catch (error) {
       console.error('Failed to list files:', error)

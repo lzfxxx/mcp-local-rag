@@ -191,7 +191,7 @@ describe('RAG MCP Server E2E Test', () => {
         // Check file list to confirm sample-v1.txt exists only once (no duplicates)
         const listResult = await ragServer.handleListFiles()
         const files = JSON.parse(listResult.content[0].text)
-        const targetFiles = files.filter((f: { filePath: string }) => f.filePath === v1File)
+        const targetFiles = files.files.filter((f: { filePath: string }) => f.filePath === v1File)
 
         // Validation: File exists only once (no duplicates)
         expect(targetFiles.length).toBe(1)

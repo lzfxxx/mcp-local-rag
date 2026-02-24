@@ -91,6 +91,30 @@ export interface IngestResult {
 }
 
 /**
+ * list_files tool output — entry for a file found in BASE_DIR
+ */
+export type FileEntry =
+  | { filePath: string; ingested: true; chunkCount: number; timestamp: string }
+  | { filePath: string; ingested: false }
+
+/**
+ * list_files tool output — entry for content ingested via ingest_data,
+ * or an orphaned DB entry whose file no longer exists on disk
+ */
+export type SourceEntry =
+  | { source: string; chunkCount: number; timestamp: string }
+  | { filePath: string; chunkCount: number; timestamp: string }
+
+/**
+ * list_files tool output
+ */
+export interface ListFilesResult {
+  baseDir: string
+  files: FileEntry[]
+  sources: SourceEntry[]
+}
+
+/**
  * query_documents tool output
  */
 export interface QueryResult {

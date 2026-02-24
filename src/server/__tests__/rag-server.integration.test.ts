@@ -676,6 +676,127 @@ describe('RAG MCP Server Integration Test - Phase 2', () => {
       expect(status.memoryUsage).toBeGreaterThan(0)
       expect(status.uptime).toBeGreaterThan(0)
     })
+
+    describe('System-managed path exclusion from list_files', () => {
+      let excludeServer: RAGServer
+      const excludeTestBase = resolve('./tmp/test-exclude-base')
+      const excludeTestDb = resolve(excludeTestBase, 'lancedb')
+      const excludeTestCache = resolve(excludeTestBase, 'models')
+
+      beforeAll(async () => {
+        // Create base directory and system-managed subdirectories
+        mkdirSync(excludeTestBase, { recursive: true })
+        mkdirSync(excludeTestDb, { recursive: true })
+        mkdirSync(excludeTestCache, { recursive: true })
+
+        // Place system files in dbPath and cacheDir before server init
+        writeFileSync(resolve(excludeTestDb, 'db-internal.txt'), 'Database internal file')
+        writeFileSync(resolve(excludeTestCache, 'model-cache.txt'), 'Model cache file')
+
+        // Place a user document in baseDir root
+        writeFileSync(resolve(excludeTestBase, 'user-document.txt'), 'User document content')
+
+        // Place user documents in a docs/ subdirectory
+        mkdirSync(resolve(excludeTestBase, 'docs'), { recursive: true })
+        writeFileSync(resolve(excludeTestBase, 'docs', 'notes.txt'), 'Notes in docs subdirectory')
+
+        excludeServer = new RAGServer({
+          dbPath: excludeTestDb,
+          modelName: 'Xenova/all-MiniLM-L6-v2',
+          cacheDir: excludeTestCache,
+          baseDir: excludeTestBase,
+          maxFileSize: 100 * 1024 * 1024,
+        })
+
+        await excludeServer.initialize()
+      })
+
+      afterAll(async () => {
+        rmSync(excludeTestBase, { recursive: true, force: true })
+      })
+
+      it('System-managed paths excluded from list_files scan', async () => {
+        const result = await excludeServer.handleListFiles()
+        const parsed = JSON.parse(result.content[0].text)
+
+        const filePaths: string[] = parsed.files.map((f: { filePath: string }) => f.filePath)
+
+        // User documents should be present (root and subdirectory)
+        expect(filePaths).toContain(resolve(excludeTestBase, 'user-document.txt'))
+        expect(filePaths).toContain(resolve(excludeTestBase, 'docs', 'notes.txt'))
+
+        // Files inside dbPath and cacheDir should NOT be present
+        expect(filePaths).not.toContain(resolve(excludeTestDb, 'db-internal.txt'))
+        expect(filePaths).not.toContain(resolve(excludeTestCache, 'model-cache.txt'))
+      })
+
+      it('raw-data .md files inside dbPath excluded from files array', async () => {
+        // Ingest data via handleIngestData to create raw-data .md in dbPath/raw-data/
+        await excludeServer.handleIngestData({
+          content:
+            'Integration test content for raw-data exclusion verification. ' +
+            'This content is long enough to produce at least one chunk in the system.',
+          metadata: {
+            source: 'https://example.com/exclude-test',
+            format: 'text',
+          },
+        })
+
+        const result = await excludeServer.handleListFiles()
+        const parsed = JSON.parse(result.content[0].text)
+
+        const filePaths: string[] = parsed.files.map((f: { filePath: string }) => f.filePath)
+
+        // raw-data .md should NOT appear in files
+        const rawDataFiles = filePaths.filter((fp) => fp.includes('raw-data'))
+        expect(rawDataFiles).toHaveLength(0)
+
+        // raw-data should appear in sources
+        expect(parsed.sources.length).toBeGreaterThan(0)
+        const sourceEntry = parsed.sources.find(
+          (s: { source?: string }) => s.source === 'https://example.com/exclude-test'
+        )
+        expect(sourceEntry).toBeDefined()
+      })
+
+      it('dbPath/cacheDir outside baseDir causes no errors', async () => {
+        // Create a separate setup where dbPath and cacheDir are siblings of baseDir
+        const siblingBase = resolve('./tmp/test-exclude-sibling')
+        const siblingData = resolve(siblingBase, 'data')
+        const siblingDb = resolve(siblingBase, 'db')
+        const siblingCache = resolve(siblingBase, 'cache')
+
+        mkdirSync(siblingData, { recursive: true })
+        mkdirSync(siblingDb, { recursive: true })
+        mkdirSync(siblingCache, { recursive: true })
+
+        // Place a user file in the data directory
+        writeFileSync(resolve(siblingData, 'sibling-file.txt'), 'File in sibling baseDir')
+
+        try {
+          const siblingServer = new RAGServer({
+            dbPath: siblingDb,
+            modelName: 'Xenova/all-MiniLM-L6-v2',
+            cacheDir: siblingCache,
+            baseDir: siblingData,
+            maxFileSize: 100 * 1024 * 1024,
+          })
+
+          await siblingServer.initialize()
+
+          const result = await siblingServer.handleListFiles()
+          const parsed = JSON.parse(result.content[0].text)
+
+          const filePaths: string[] = parsed.files.map((f: { filePath: string }) => f.filePath)
+
+          // Only the user file should appear
+          expect(filePaths).toContain(resolve(siblingData, 'sibling-file.txt'))
+          expect(parsed.files.length).toBe(1)
+        } finally {
+          rmSync(siblingBase, { recursive: true, force: true })
+        }
+      })
+    })
   })
 
   describe('AC-008: File Re-ingestion', () => {

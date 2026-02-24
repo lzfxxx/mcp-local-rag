@@ -20,7 +20,7 @@ import {
 // ============================================
 
 /**
- * File extensions supported by DocumentParser.
+ * File extensions supported by the parser module (parseFile + parsePdf).
  * Exported so other modules (e.g. list_files) stay in sync automatically
  * when new formats are added here.
  */

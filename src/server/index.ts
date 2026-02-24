@@ -2,7 +2,7 @@
 
 import { randomUUID } from 'node:crypto'
 import { readFile, readdir, unlink } from 'node:fs/promises'
-import { extname, join } from 'node:path'
+import { extname, join, resolve } from 'node:path'
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
@@ -51,10 +51,13 @@ export class RAGServer {
   private readonly parser: DocumentParser
   private readonly dbPath: string
   private readonly baseDir: string
+  // Used by handleListFiles filter to exclude system-managed directories
+  private readonly excludePaths: string[]
 
   constructor(config: RAGServerConfig) {
     this.dbPath = config.dbPath
     this.baseDir = config.baseDir
+    this.excludePaths = [`${resolve(config.dbPath)}/`, `${resolve(config.cacheDir)}/`]
     this.server = new Server(
       { name: 'rag-mcp-server', version: '1.0.0' },
       { capabilities: { tools: {} } }
@@ -453,6 +456,7 @@ export class RAGServer {
           const dir = (e as any).parentPath ?? e.path
           return join(dir, e.name)
         })
+        .filter((filePath) => !this.excludePaths.some((ep) => filePath.startsWith(ep)))
         .sort()
 
       const baseDirSet = new Set(baseDirFiles)

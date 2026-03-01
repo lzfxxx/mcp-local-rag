@@ -1,7 +1,7 @@
 # MCP Local RAG Anything
 
-[![GitHub stars](https://img.shields.io/github/stars/shinpr/mcp-local-rag?style=social)](https://github.com/shinpr/mcp-local-rag)
-[![npm version](https://img.shields.io/npm/v/mcp-local-rag.svg)](https://www.npmjs.com/package/mcp-local-rag)
+[![GitHub stars](https://img.shields.io/github/stars/lzfxxx/mcp-local-rag?style=social)](https://github.com/lzfxxx/mcp-local-rag)
+[![npm version](https://img.shields.io/npm/v/mcp-local-rag-anything.svg)](https://www.npmjs.com/package/mcp-local-rag-anything)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-green.svg)](https://registry.modelcontextprotocol.io/)
@@ -38,7 +38,7 @@ Add the MCP server to your AI coding tool:
   "mcpServers": {
     "local-rag": {
       "command": "npx",
-      "args": ["-y", "mcp-local-rag"],
+      "args": ["-y", "mcp-local-rag-anything"],
       "env": {
         "BASE_DIR": "/path/to/your/documents"
       }
@@ -51,7 +51,7 @@ Add the MCP server to your AI coding tool:
 ```toml
 [mcp_servers.local-rag]
 command = "npx"
-args = ["-y", "mcp-local-rag"]
+args = ["-y", "mcp-local-rag-anything"]
 
 [mcp_servers.local-rag.env]
 BASE_DIR = "/path/to/your/documents"
@@ -59,7 +59,7 @@ BASE_DIR = "/path/to/your/documents"
 
 **For Claude Code** — Run this command:
 ```bash
-claude mcp add local-rag --scope user --env BASE_DIR=/path/to/your/documents -- npx -y mcp-local-rag
+claude mcp add local-rag --scope user --env BASE_DIR=/path/to/your/documents -- npx -y mcp-local-rag-anything
 ```
 
 Restart your tool, then start using it:
@@ -196,13 +196,13 @@ The keyword boost ensures exact terms like `useEffect` or error codes rank highe
 
 ```bash
 # Claude Code (project-level)
-npx mcp-local-rag skills install --claude-code
+npx mcp-local-rag-anything skills install --claude-code
 
 # Claude Code (user-level)
-npx mcp-local-rag skills install --claude-code --global
+npx mcp-local-rag-anything skills install --claude-code --global
 
 # Codex
-npx mcp-local-rag skills install --codex
+npx mcp-local-rag-anything skills install --codex
 ```
 
 Skills include:
@@ -216,14 +216,14 @@ Skills are loaded automatically in most cases—AI assistants scan skill metadat
 
 **Option 1: Explicit request (natural language)**
 Before RAG operations, request in natural language:
-- "Use the mcp-local-rag skill for this search"
+- "Use the mcp-local-rag-anything skill for this search"
 - "Apply RAG best practices from skills"
 
 **Option 2: Add to agent instruction file**
 Add to your `AGENTS.md`, `CLAUDE.md`, or other agent instruction file:
 ```
 When using query_documents, ingest_file, or ingest_data tools,
-apply the mcp-local-rag skill for optimal query formulation and result interpretation.
+apply the mcp-local-rag-anything skill for optimal query formulation and result interpretation.
 ```
 
 <details>
@@ -255,7 +255,7 @@ apply the mcp-local-rag skill for optimal query formulation and result interpret
   "mcpServers": {
     "local-rag": {
       "command": "npx",
-      "args": ["-y", "mcp-local-rag"],
+      "args": ["-y", "mcp-local-rag-anything"],
       "env": {
         "BASE_DIR": "/path/to/your/documents"
       }
@@ -269,7 +269,7 @@ apply the mcp-local-rag skill for optimal query formulation and result interpret
 ```toml
 [mcp_servers.local-rag]
 command = "npx"
-args = ["-y", "mcp-local-rag"]
+args = ["-y", "mcp-local-rag-anything"]
 
 [mcp_servers.local-rag.env]
 BASE_DIR = "/path/to/your/documents"
@@ -280,7 +280,7 @@ BASE_DIR = "/path/to/your/documents"
 ```bash
 claude mcp add local-rag --scope user \
   --env BASE_DIR=/path/to/your/documents \
-  -- npx -y mcp-local-rag
+  -- npx -y mcp-local-rag-anything
 ```
 
 ### First Run
@@ -341,7 +341,7 @@ Ensure file paths are within `BASE_DIR`. Use absolute paths.
 
 1. Verify config file syntax
 2. Restart client completely (Cmd+Q on Mac for Cursor)
-3. Test directly: `npx mcp-local-rag` should run without errors
+3. Test directly: `npx mcp-local-rag-anything` should run without errors
 
 </details>
 
@@ -380,8 +380,8 @@ Copy `DB_PATH` directory (default: `./lancedb/`).
 ### Building from Source
 
 ```bash
-git clone https://github.com/shinpr/mcp-local-rag.git
-cd mcp-local-rag
+git clone https://github.com/lzfxxx/mcp-local-rag.git
+cd mcp-local-rag-anything
 pnpm install
 ```
 

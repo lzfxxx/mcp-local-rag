@@ -1,6 +1,6 @@
 {
   "name": "mcp-local-rag-anything",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local RAG MCP Server with extended file support (including PPTX)",
   "main": "dist/index.js",
   "bin": {

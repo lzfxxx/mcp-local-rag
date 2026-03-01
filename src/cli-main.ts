@@ -15,9 +15,11 @@ export function handleCli(args: string[]): void {
         process.exit(0)
       } else {
         console.error(
-          'Unknown skills subcommand. Usage: npx mcp-local-rag skills install [options]'
+          'Unknown skills subcommand. Usage: npx mcp-local-rag-anything skills install [options]'
         )
-        console.error('Run "npx mcp-local-rag skills install --help" for more information.')
+        console.error(
+          'Run "npx mcp-local-rag-anything skills install --help" for more information.'
+        )
         process.exit(1)
       }
       break

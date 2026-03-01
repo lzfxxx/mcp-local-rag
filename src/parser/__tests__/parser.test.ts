@@ -190,6 +190,18 @@ describe('DocumentParser', () => {
       )
     })
 
+    it('should throw FileOperationError for invalid PPTX file', async () => {
+      const filePath = join(testDir, 'test.pptx')
+      await writeFile(filePath, 'fake pptx content')
+
+      await expect(parser.parseFile(filePath)).rejects.toThrow(
+        expect.objectContaining({
+          name: 'FileOperationError',
+          message: expect.stringMatching(/Failed to parse PPTX/),
+        })
+      )
+    })
+
     it('should throw ValidationError for path traversal attempt', async () => {
       await expect(parser.parseFile('../outside.txt')).rejects.toThrow(ValidationError)
     })

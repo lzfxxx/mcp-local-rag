@@ -495,9 +495,9 @@ describe('RAG MCP Server Integration Test - Phase 2', () => {
       }
     })
 
-    // AC interpretation: [Functional requirement] All formats (PDF/DOCX/TXT/MD) ingested successfully
-    // Validation: All 4 formats (PDF, DOCX, TXT, MD) ingested successfully
-    it('Sample files for all formats (PDF, DOCX, TXT, MD) ingested successfully', async () => {
+    // AC interpretation: [Functional requirement] All formats (PDF/DOCX/PPTX/TXT/MD) ingested successfully
+    // Validation: All 5 formats (PDF, DOCX, PPTX, TXT, MD) ingest branch behavior verified
+    it('Sample files for all formats (PDF, DOCX, PPTX, TXT, MD) ingested successfully', async () => {
       // Test DocumentParser directly to verify all 4 formats are supported
       const { DocumentParser } = await import('../../parser/index')
       const parser = new DocumentParser({
@@ -531,6 +531,20 @@ describe('RAG MCP Server Integration Test - Phase 2', () => {
         expect((error as Error).message).toContain('Failed to parse DOCX')
       }
 
+      // Verify PPTX file branching exists
+      // Verify FileOperationError occurs with invalid PPTX file
+      const fakePptxFile = resolve(localTestDataDir, 'test-all-formats.pptx')
+      writeFileSync(fakePptxFile, 'Not a real PPTX file')
+      try {
+        await parser.parseFile(fakePptxFile)
+        // Fail if error does not occur
+        expect(false).toBe(true)
+      } catch (error) {
+        // Verify FileOperationError occurs (PPTX parse failure)
+        expect((error as Error).name).toBe('FileOperationError')
+        expect((error as Error).message).toContain('Failed to parse PPTX')
+      }
+
       // PDF uses parsePdf directly (not parseFile)
       // Verify parseFile rejects PDF files
       const fakePdfFile = resolve(localTestDataDir, 'test-all-formats.pdf')
@@ -545,7 +559,7 @@ describe('RAG MCP Server Integration Test - Phase 2', () => {
         expect((error as Error).message).toContain('Unsupported file format')
       }
 
-      // Verify all 3 formats (DOCX, TXT, MD) are supported via parseFile
+      // Verify all 4 formats (DOCX, PPTX, TXT, MD) are supported via parseFile
       // PDF is handled by parsePdf directly
     })
   })

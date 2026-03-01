@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Entry point for mcp-local-rag
+// Entry point for mcp-local-rag-anything
 // Routes to CLI subcommands or starts the MCP server
 
 import { handleCli } from './cli-main.js'

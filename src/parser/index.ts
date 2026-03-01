@@ -1,8 +1,10 @@
-// DocumentParser implementation with PDF/DOCX/TXT/MD support
+// DocumentParser implementation with PDF/DOCX/PPTX/TXT/MD support
 
+import { execFile } from 'node:child_process'
 import { statSync } from 'node:fs'
 import { lstat, readFile, realpath } from 'node:fs/promises'
 import { basename, extname, isAbsolute, resolve, sep } from 'node:path'
+import { promisify } from 'node:util'
 import mammoth from 'mammoth'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import type { TextItem } from 'pdfjs-dist/types/src/display/api'
@@ -12,8 +14,11 @@ import {
   extractDocxTitle,
   extractMarkdownTitle,
   extractPdfTitle,
+  extractPptxTitle,
   extractTxtTitle,
 } from './title-extractor.js'
+
+const execFileAsync = promisify(execFile)
 
 // ============================================
 // Supported Extensions
@@ -24,7 +29,7 @@ import {
  * Exported so other modules (e.g. list_files) stay in sync automatically
  * when new formats are added here.
  */
-export const SUPPORTED_EXTENSIONS = new Set(['.pdf', '.docx', '.txt', '.md'])
+export const SUPPORTED_EXTENSIONS = new Set(['.pdf', '.docx', '.pptx', '.txt', '.md'])
 
 // ============================================
 // Type Definitions
@@ -80,12 +85,13 @@ export class FileOperationError extends Error {
 // ============================================
 
 /**
- * Document parser class (PDF/DOCX/TXT/MD support)
+ * Document parser class (PDF/DOCX/PPTX/TXT/MD support)
  *
  * Responsibilities:
  * - File path validation (path traversal prevention)
  * - File size validation (100MB limit)
- * - Parse 4 formats (PDF/DOCX/TXT/MD)
+ * - Parse text-first formats via parseFile (DOCX/PPTX/TXT/MD)
+ * - Parse PDF via parsePdf
  */
 export class DocumentParser {
   private readonly config: ParserConfig
@@ -192,6 +198,8 @@ export class DocumentParser {
     switch (ext) {
       case '.docx':
         return await this.parseDocx(filePath)
+      case '.pptx':
+        return await this.parsePptx(filePath)
       case '.txt':
         return await this.parseTxt(filePath)
       case '.md':
@@ -311,6 +319,71 @@ export class DocumentParser {
       return { content: rawText, title: titleResult.title }
     } catch (error) {
       throw new FileOperationError(`Failed to parse DOCX: ${filePath}`, error as Error)
+    }
+  }
+
+  /**
+   * PPTX parsing (using unzip + XML text extraction)
+   *
+   * Extracts text from ppt/slides/slide*.xml and derives title from first slide text.
+   *
+   * @param filePath - PPTX file path
+   * @returns ParseResult with content and extracted title
+   * @throws FileOperationError - unzip failed or parse failed
+   */
+  private async parsePptx(filePath: string): Promise<ParseResult> {
+    try {
+      const { stdout } = await execFileAsync('unzip', ['-Z1', filePath])
+      const slideFiles = stdout
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => /^ppt\/slides\/slide\d+\.xml$/i.test(line))
+        .sort((a, b) => {
+          const an = Number.parseInt(a.match(/slide(\d+)\.xml/i)?.[1] || '0', 10)
+          const bn = Number.parseInt(b.match(/slide(\d+)\.xml/i)?.[1] || '0', 10)
+          return an - bn
+        })
+
+      if (slideFiles.length === 0) {
+        throw new Error('No slide XML files found in PPTX')
+      }
+
+      const slideTexts: string[] = []
+      for (const slideFile of slideFiles) {
+        const { stdout: slideXml } = await execFileAsync('unzip', ['-p', filePath, slideFile], {
+          maxBuffer: 20 * 1024 * 1024,
+        })
+
+        const rawTexts = Array.from(slideXml.matchAll(/<a:t>([\s\S]*?)<\/a:t>/g)).map(
+          (m) => m[1] ?? ''
+        )
+        const decodedTexts = rawTexts
+          .map((s) =>
+            s
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&apos;/g, "'")
+          )
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0)
+
+        if (decodedTexts.length > 0) {
+          slideTexts.push(decodedTexts.join('\n'))
+        }
+      }
+
+      const content = slideTexts.join('\n\n')
+      const fileName = basename(filePath)
+      const titleResult = extractPptxTitle(slideTexts[0], fileName)
+
+      console.error(
+        `Parsed PPTX: ${filePath} (${content.length} characters, ${slideTexts.length} slides with text)`
+      )
+      return { content, title: titleResult.title }
+    } catch (error) {
+      throw new FileOperationError(`Failed to parse PPTX: ${filePath}`, error as Error)
     }
   }
 

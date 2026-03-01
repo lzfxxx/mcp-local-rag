@@ -1,10 +1,10 @@
 {
-  "name": "mcp-local-rag",
-  "version": "0.7.0",
-  "description": "Local RAG MCP Server - Easy-to-setup document search with minimal configuration",
+  "name": "mcp-local-rag-anything",
+  "version": "0.1.0",
+  "description": "Local RAG MCP Server with extended file support (including PPTX)",
   "main": "dist/index.js",
   "bin": {
-    "mcp-local-rag": "dist/index.js"
+    "mcp-local-rag-anything": "dist/index.js"
   },
   "files": [
     "dist",
@@ -36,7 +36,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shinpr/mcp-local-rag.git"
+    "url": "git+https://github.com/lzfxxx/mcp-local-rag-anything.git"
   },
   "scripts": {
     "build": "tsc && tsc-alias",
@@ -95,5 +95,5 @@
       "biome format --write --no-errors-on-unmatched"
     ]
   },
-  "mcpName": "io.github.shinpr/mcp-local-rag"
+  "mcpName": "io.github.lzfxxx/mcp-local-rag-anything"
 }

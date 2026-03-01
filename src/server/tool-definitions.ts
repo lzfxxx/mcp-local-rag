@@ -31,7 +31,7 @@ export const toolDefinitions: Tool[] = [
   {
     name: 'ingest_file',
     description:
-      'Ingest a document file (PDF, DOCX, TXT, MD) into the vector database for semantic search. File path must be an absolute path. Supports re-ingestion to update existing documents.',
+      'Ingest a document file (PDF, DOCX, PPTX, TXT, MD) into the vector database for semantic search. File path must be an absolute path. Supports re-ingestion to update existing documents.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -98,7 +98,7 @@ export const toolDefinitions: Tool[] = [
   {
     name: 'list_files',
     description:
-      'List all files in BASE_DIR (PDF, DOCX, TXT, MD) and show which are ingested into the vector database. Also lists any other ingested items (web pages, clipboard content, etc.) that are outside BASE_DIR.',
+      'List all files in BASE_DIR (PDF, DOCX, PPTX, TXT, MD) and show which are ingested into the vector database. Also lists any other ingested items (web pages, clipboard content, etc.) that are outside BASE_DIR.',
     inputSchema: { type: 'object', properties: {} },
   },
   {

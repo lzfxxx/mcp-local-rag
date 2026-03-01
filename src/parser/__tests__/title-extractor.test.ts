@@ -7,6 +7,7 @@ import {
   extractHtmlTitle,
   extractMarkdownTitle,
   extractPdfTitle,
+  extractPptxTitle,
   extractTxtTitle,
   fileNameToTitle,
 } from '../title-extractor.js'
@@ -254,6 +255,39 @@ describe('Title Extractor', () => {
 
       expect(result.title).toBe('First Title')
       expect(result.source).toBe('content')
+    })
+  })
+
+  // --------------------------------------------
+  // extractPptxTitle
+  // --------------------------------------------
+  describe('extractPptxTitle', () => {
+    it('should extract first non-empty line from first slide text', () => {
+      const result = extractPptxTitle('Project Kickoff\nAgenda\nTimeline', 'deck.pptx')
+
+      expect(result.title).toBe('Project Kickoff')
+      expect(result.source).toBe('content')
+    })
+
+    it('should trim and ignore empty lines before first content line', () => {
+      const result = extractPptxTitle('\n\n  Quarterly Review  \nKPIs', 'review.pptx')
+
+      expect(result.title).toBe('Quarterly Review')
+      expect(result.source).toBe('content')
+    })
+
+    it('should fall back to file name when first slide text is empty', () => {
+      const result = extractPptxTitle('   ', 'team-update.pptx')
+
+      expect(result.title).toBe('team update')
+      expect(result.source).toBe('filename')
+    })
+
+    it('should fall back to file name when first slide text is undefined', () => {
+      const result = extractPptxTitle(undefined, 'product-roadmap.pptx')
+
+      expect(result.title).toBe('product roadmap')
+      expect(result.source).toBe('filename')
     })
   })
 })

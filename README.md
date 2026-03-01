@@ -1,4 +1,4 @@
-# MCP Local RAG
+# MCP Local RAG Anything
 
 [![GitHub stars](https://img.shields.io/github/stars/shinpr/mcp-local-rag?style=social)](https://github.com/shinpr/mcp-local-rag)
 [![npm version](https://img.shields.io/npm/v/mcp-local-rag.svg)](https://www.npmjs.com/package/mcp-local-rag)
@@ -98,7 +98,7 @@ The server provides 6 MCP tools: ingest file, ingest data, search, list, delete,
 "Ingest the document at /Users/me/docs/api-spec.pdf"
 ```
 
-Supports PDF, DOCX, TXT, and Markdown. The server extracts text, splits it into chunks, generates embeddings locally, and stores everything in a local vector database.
+Supports PDF, DOCX, PPTX, TXT, and Markdown. The server extracts text, splits it into chunks, generates embeddings locally, and stores everything in a local vector database.
 
 Re-ingesting the same file replaces the old version automatically.
 
@@ -358,7 +358,7 @@ Yes, after the first model download (~90MB).
 Cloud services offer better accuracy at scale but require sending data externally. This trades some accuracy for complete privacy and zero runtime cost.
 
 **What file formats are supported?**
-PDF, DOCX, TXT, Markdown, and HTML (via `ingest_data`). Not yet: Excel, PowerPoint, images.
+PDF, DOCX, PPTX, TXT, Markdown, and HTML (via `ingest_data`). Not yet: Excel, legacy .ppt, images.
 
 **Can I change the embedding model?**
 Yes, but you must delete your database and re-ingest all documents. Different models produce incompatible vector dimensions.
@@ -407,7 +407,7 @@ pnpm run check:all     # Full quality check
 src/
   index.ts      # Entry point
   server/       # MCP tool handlers
-  parser/       # PDF, DOCX, TXT, MD parsing
+  parser/       # PDF, DOCX, PPTX, TXT, MD parsing
   chunker/      # Text splitting
   embedder/     # Transformers.js embeddings
   vectordb/     # LanceDB operations

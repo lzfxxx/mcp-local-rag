@@ -164,3 +164,29 @@ export function extractDocxTitle(htmlContent: string, fileName: string): TitleEx
   // Fall back to file name
   return { title: fileNameToTitle(fileName), source: 'filename' }
 }
+
+/**
+ * Extract title from PPTX slide text
+ * Priority: first non-empty line from first slide -> file name
+ *
+ * @param firstSlideText - Extracted text from the first slide
+ * @param fileName - File name for fallback
+ * @returns Title extraction result
+ */
+export function extractPptxTitle(
+  firstSlideText: string | undefined,
+  fileName: string
+): TitleExtractionResult {
+  if (firstSlideText && firstSlideText.trim().length > 0) {
+    const firstLine = firstSlideText
+      .split('\n')
+      .map((line) => line.trim())
+      .find((line) => line.length > 0)
+
+    if (firstLine) {
+      return { title: firstLine, source: 'content' }
+    }
+  }
+
+  return { title: fileNameToTitle(fileName), source: 'filename' }
+}

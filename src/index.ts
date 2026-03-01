@@ -2,22 +2,23 @@
 // Entry point for mcp-local-rag-anything
 // Routes to CLI subcommands or starts the MCP server
 
-import { handleCli } from './cli-main.js'
-import { startServer } from './server-main.js'
-
 // ============================================
 // Routing
 // ============================================
 
 const SUBCOMMANDS = new Set(['skills'])
 
-const args = process.argv.slice(2)
-const firstArg = args[0]
+async function main(): Promise<void> {
+  const args = process.argv.slice(2)
+  const firstArg = args[0]
 
-if (firstArg && SUBCOMMANDS.has(firstArg)) {
-  // CLI subcommand
-  handleCli(args)
-} else {
+  if (firstArg && SUBCOMMANDS.has(firstArg)) {
+    // CLI subcommand (lazy import to avoid loading server/embedder deps)
+    const { handleCli } = await import('./cli-main.js')
+    handleCli(args)
+    return
+  }
+
   // Default: start MCP server
   process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason)
@@ -29,5 +30,8 @@ if (firstArg && SUBCOMMANDS.has(firstArg)) {
     process.exit(1)
   })
 
+  const { startServer } = await import('./server-main.js')
   startServer()
 }
+
+void main()
